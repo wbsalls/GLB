@@ -1,15 +1,19 @@
+# version on GitHub
+
 
 library(randomForest)
 library(party) # cforest
 #library(caret)
 #library(h2o)
 
+script_dir <- "C:/Users/WSalls/Desktop/Git/GLB"
+
+source(file.path(script_dir, "RF_functions_180530.R")) # calls version from same folder (in this case, Git)
+
 dir_analysis <- "O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis"
 #dir_analysis <- "/Users/wilsonsalls/Desktop/EPA/GLB/Analysis/"
 
 setwd(dir_analysis)
-
-source("RF/RF_functions_180530.R")
 
 # specify variable file to use for naming
 variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-05-23.csv", stringsAsFactors = FALSE)
@@ -132,7 +136,7 @@ for (nr in 1:length(responses)) {
   
   set.seed(1)
   
-  nruns <- 4
+  nruns <- 20
   
   for (j in 1:nruns) {
     print(sprintf("   *** %s: run #%s of %s ***   ", resp, j, nruns))
@@ -276,42 +280,6 @@ write.csv(rank_summary_df, sprintf("rank_summary_df_%s.csv", Sys.Date()))
 
 Sys.time()
 
-# ----------------------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------------
+#
 
-
-
-# summarize importance across variables for each run - to see if imp_value is comparable across runs (appears to be close-ish)
-'
-var_imp_summary <- data.frame()
-
-for (r in 1:nruns) {
-  imp_value <- var_imp_df[, r + 1]
-  var_imp_summary <- rbind(var_imp_summary, data.frame(run = r,
-                                                       mean(imp_value),
-                                                       median(imp_value),
-                                                       min(imp_value),
-                                                       max(imp_value),
-                                                       range.imp_value = max(imp_value) - min(imp_value),
-                                                       sd(imp_value)))
-  hist(x = imp_value, breaks = 7, xlim = c(0, 0.0007))
-}
-'
-
-
-## correlations ---------
-'
-
-# calculate correlations
-num_vars <- c()
-in_data <- cbind(resp_data, pred_data)
-names(in_data)[1] <- resp
-cor_vars <- cor(in_data, use = "pairwise.complete.obs")
-
-# query individual correlations
-cor_vars[which(rownames(cor_vars) == "rNI90"), which(rownames(cor_vars) == "rUI90")]
-
-# make plot
-library(corrplot)
-corrplot(cor_vars)
-'
+print(dirname(sys.frame()$ofile))
