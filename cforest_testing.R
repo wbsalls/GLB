@@ -1,5 +1,7 @@
 # use after running setup (top) section of RF_GLB_180815.R
 
+options(stringsAsFactors = FALSE)
+
 
 resp <- "CI_sp90th_tmedian"
 resp_data <- lake_data[, resp]
@@ -57,5 +59,6 @@ for (i in 2:(length(cf_imp_list) / 2)) {
   imp_ranks <- merge(imp_ranks, ranks_i, by = "variable")
 }
 
+rf_results <- read.csv("/Users/wilsonsalls/Desktop/EPA/GLB/Analysis/RF/out_completed/180604_rF/var_rank_df_CI_sp90th_tmedian_2018-06-04.csv")
 
-
+cf_results <- read.csv("")
