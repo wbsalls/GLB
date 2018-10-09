@@ -7,6 +7,7 @@ library(party) # cforest
 #library(h2o)
 
 script_dir <- "C:/Users/WSalls/Desktop/Git/GLB"
+#script_dir <- "/Users/wilsonsalls/Desktop/Git/GLB"
 
 source(file.path(script_dir, "RF_functions_180530.R")) # calls version from same folder (in this case, Git)
 
@@ -282,4 +283,14 @@ Sys.time()
 
 #
 
-print(dirname(sys.frame()$ofile))
+print(dirname(sys.frame()$ofile)) # ?
+
+
+### ----------------------
+
+# individual
+
+resp <- responses[1]
+resp_data <- lake_data[, resp]
+rf <- randomForest(x = pred_data, y = resp_data, na.action = na.omit)
+importance(rf, type = 2)
