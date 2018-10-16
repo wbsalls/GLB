@@ -74,3 +74,16 @@ samp_pts_inlakes <- filter(samp_pts_inlakes, ActivityMediaSubdivisionName %in% "
 length(unique(samp_pts_inlakes$COMID))
 
 
+## other ways of counting
+samps <- read.csv("O:/PRIV/NERL_ORD_CYAN/Salls_working/Economics/result_station_inLakes_100mBuff.csv")
+
+length(unique(samps$COMID))
+
+samps_surf <- samps[samps$ActivityMediaSubdivisionName == "Surface Water", ]
+length(unique(samps_surf$COMID))
+
+samps_subset <- samps[which(samps$ActivityMediaSubdivisionName %in% c("Surface Water", "Estuary")), ]
+length(unique(samps_subset$COMID))
+
+
+
