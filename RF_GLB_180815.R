@@ -17,10 +17,10 @@ dir_analysis <- "O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis"
 setwd(dir_analysis)
 
 # specify variable file to use for naming
-variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-05-23.csv", stringsAsFactors = FALSE)
+variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-10-18.csv", stringsAsFactors = FALSE)
 
 # read in data
-lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-05-23.csv")
+lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-10-18.csv")
 lake_data <- lake_data[, -which(colnames(lake_data) == "X")] # remove X column
 
 # select model type
@@ -65,7 +65,7 @@ reorder_levels <- function(input_dat) {
 ## predictors ---------
 
 # predictors
-pred_vars_all <- colnames(lake_data)[4:90]
+pred_vars_all <- colnames(lake_data)[4:93]
 
 pred_vars <- pred_vars_all[-which(pred_vars_all %in% c("ShorelineL",
                                                        "ShorelineD",
