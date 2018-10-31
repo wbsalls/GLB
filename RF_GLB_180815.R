@@ -2,7 +2,7 @@
 
 
 library(randomForest)
-library(party) # cforest
+#library(party) # cforest
 #library(caret)
 #library(h2o)
 
@@ -17,20 +17,37 @@ dir_analysis <- "O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis"
 setwd(dir_analysis)
 
 # specify variable file to use for naming
-variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-10-18.csv", stringsAsFactors = FALSE)
+variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-10-29.csv", stringsAsFactors = FALSE)
 
 # read in data
-lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-10-18.csv")
+lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-10-29.csv")
 lake_data <- lake_data[, -which(colnames(lake_data) == "X")] # remove X column
 
 # select model type
 model_type <- "randomForest" # "randomForest" or "conditionalForest"
 
 
+## subset - ecoregion ------------
+
+# set variable to subset by (or "all)
+subset_var <- "all"
+#subset_var <- "Ecoregion_L1_code"
+#subset_var <- "Ecoregion_L2_code"
+
+# select names of classes/regions with at least 25 observations
+if (subset_var == "all") {
+  data_subsets <- "all"
+} else {
+  subset_table <- table(lake_data[, which(colnames(lake_data) == subset_var)])
+  data_subsets <- names(subset_table[subset_table >= 25])
+}
+
+
+
 ## responses ----------
 
-# remove NAs in response
-lake_data <- lake_data[!is.na(lake_data$CI_sp90th_tmedian), ]
+# check for NAs in response
+sum(is.na(lake_data$CI_sp90th_tmedian))
 
 # add binary bloom/no variable
 lake_data$ci_median_bloom <- NA
@@ -44,7 +61,8 @@ lake_data$CI_sp90th_tmedian_rmND[which(lake_data$CI_sp90th_tmedian_rmND == 0.000
 
 # select response
 #responses <- c("CI_sp90th_tmedian", "CI_sp90th_tmax", "ci_median_WHO", "ci_max_WHO", "ci_median_Ross", "ci_max_Ross", "ci_median_bloom", "CI_sp90th_tmedian_rmND")
-responses <- c("CI_sp90th_tmedian", "ci_median_WHO", "ci_median_Ross", "ci_median_bloom", "CI_sp90th_tmedian_rmND")
+#responses <- c("CI_sp90th_tmedian", "ci_median_WHO", "ci_median_Ross", "ci_median_bloom", "CI_sp90th_tmedian_rmND")
+responses <- c("CI_sp90th_tmedian")
 
 # function to reorder classification factor levels
 reorder_levels <- function(input_dat) {
@@ -65,7 +83,7 @@ reorder_levels <- function(input_dat) {
 ## predictors ---------
 
 # predictors
-pred_vars_all <- colnames(lake_data)[4:93]
+pred_vars_all <- colnames(lake_data)[4:(which(colnames(lake_data) == "Ecoregion_L1") - 1)]
 
 pred_vars <- pred_vars_all[-which(pred_vars_all %in% c("ShorelineL",
                                                        "ShorelineD",
@@ -81,216 +99,250 @@ pred_vars <- pred_vars_all[-which(pred_vars_all %in% c("ShorelineL",
                                                        "Q"
 ))] # remove preds
 
-pred_data <- lake_data[, pred_vars]
-
-# avg_d8Cbw - replace NA with filler - use max value
-pred_data$avg_d8Cbw[is.na(pred_data$avg_d8Cbw)] <- max(pred_data$avg_d8Cbw, na.rm = TRUE)
-
 # predictors - see NAs
-#for (p in 1:ncol(pred_data)) {print(paste0(sum(is.na(pred_data[, p])), " : ", pred_vars[p]))}
+#for (p in 4:(which(colnames(lake_data) == "Ecoregion_L1") - 1)) {print(paste0(sum(is.na(lake_data[, p])), " : ", colnames(lake_data)[p]))}
 
 #
 
 # initiate rank summary data frame
-rank_summary_df <- data.frame(var_rank_df.var = rep(NA, 76))
+rank_summary_df <- data.frame(var_rank_df.var = rep(NA, length(pred_vars)))
 
-#
+
+# ----------------------------------
 
 Sys.time()
 
-for (nr in 1:length(responses)) {
-  resp <- responses[nr]
+# for each subset (ecoregion)...
+for (d in 1:length(data_subsets)) {
   
-  resp_data <- lake_data[, resp]
-  
-  # reorder classification factor levels
-  if (is.factor(resp_data)) {
-    resp_data <- reorder_levels(resp_data)
-  }
-  
-  # remove records with NA response
-  pred_data <- pred_data[!is.na(resp_data), ] # this has to go before resp, so don't change order!
-  resp_data <- resp_data[!is.na(resp_data)]
-  
-  
-  # remove records with NA predictors, if any
-  index_na_pred <- which(apply(pred_data, 1, FUN = function(x) {sum(is.na(x))}) > 0)
-  if (length(index_na_pred) > 0) {
-    resp_data <- resp_data[-index_na_pred]
-    pred_data <- pred_data[-index_na_pred, ]
-  }
-  
-  
-  
-  # multi RF runs -----------------------------------------------------------------------------------------------
-  setwd(file.path(dir_analysis, "RF/out/"))
-  
-  rf_eval_df <- data.frame()
-  var_imp_df <- data.frame(var = as.character(pred_vars), stringsAsFactors = FALSE)
-  var_rank_df <- data.frame(var = as.character(pred_vars), stringsAsFactors = FALSE)
-  
-  if (is.numeric(resp_data)) {
-    imp_metric_label <- "IncNodePurity"
+  if (data_subsets == "all") {
+    lake_data_use <- lake_data
   } else {
-    imp_metric_label <- "MeanDecreaseGini"
+    lake_data_use <- lake_data[which(lake_data[, which(colnames(lake_data) == subset_var)] == data_subsets[d]), ]
   }
   
-  set.seed(1)
-  
-  nruns <- 20
-  
-  for (j in 1:nruns) {
-    print(sprintf("   *** %s: run #%s of %s ***   ", resp, j, nruns))
+  # for each response variable...
+  for (nr in 1:length(responses)) {
+    resp <- responses[nr]
     
-    # run rf function
-    rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit) # randomForest
+    dataset_name <- paste0(data_subsets[d]"_", resp)
+    
+    resp_data <- lake_data_use[, resp]
+    pred_data <- lake_data_use[, pred_vars]
+    
+    # reorder classification factor levels
+    if (is.factor(resp_data)) {
+      resp_data <- reorder_levels(resp_data)
+    }
+    
+    # remove records with NA response
+    pred_data <- pred_data[!is.na(resp_data), ] # this has to go before resp, so don't change order!
+    resp_data <- resp_data[!is.na(resp_data)]
     
     
-    ## evaluate -----------
+    # remove records with NA predictors, if any
+    index_na_pred <- which(apply(pred_data, 1, FUN = function(x) {sum(is.na(x))}) > 0)
+    if (length(index_na_pred) > 0) {
+      resp_data <- resp_data[-index_na_pred]
+      pred_data <- pred_data[-index_na_pred, ]
+    }
     
-    # plot error rate
-    jpeg(sprintf('runs/ErrorRate_%s.jpg', paste0(resp, "_run", j)), width = 1000, height = 700)
-    plot(rf_i)
-    dev.off()
+    
+    
+    # multi RF runs -----------------------------------------------------------------------------------------------
+    setwd(file.path(dir_analysis, "RF/out/"))
+    
+    rf_eval_df <- data.frame()
+    var_imp_df <- data.frame(var = as.character(pred_vars), stringsAsFactors = FALSE)
+    var_rank_df <- data.frame(var = as.character(pred_vars), stringsAsFactors = FALSE)
     
     if (is.numeric(resp_data)) {
-      # predict using this rf model
-      preds <- predict(rf_i)
-      
-      # run evaluation function, updating
-      rf_eval_df_i <- eval_model(resp_data, preds, run_name = paste0(resp, "_run", j), 
-                                 plot_fit = FALSE, save_plot = TRUE, save_dir = "runs")
-      rf_eval_df <- rbind(rf_eval_df, cbind(rf_eval_df_i, 
-                                            OOB_mse_mean = mean(rf_i$mse),
-                                            OOB_rsq_mean = mean(rf_i$rsq)))
+      imp_metric_label <- "IncNodePurity"
     } else {
-      # run confusion matrix; round classication.error to 3 places
-      conf <- (rf_i$confusion)
-      conf[, ncol(conf)] <- round(conf[, ncol(conf)], 3)
+      imp_metric_label <- "MeanDecreaseGini"
+    }
+    
+    set.seed(1)
+    
+    nruns <- 20
+    
+    # for each model run...
+    for (j in 1:nruns) {
+      print(sprintf("   *** %s: run #%s of %s ***   ", dataset_name, j, nruns))
       
-      # calculate commission error for each column
-      comerr_vect <- c()
-      for (c in 1:(ncol(conf) - 1)) {
-        comerr_vect <- c(comerr_vect, round((sum(conf[, c]) - conf[c, c]) / sum(conf[, c]), 3))
+      # run rf function
+      rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit) # randomForest
+      
+      
+      ## evaluate -----------
+      
+      # plot error rate
+      jpeg(sprintf('runs/ErrorRate_%s.jpg', paste0(dataset_name, "_run", j)), width = 1000, height = 700)
+      plot(rf_i)
+      dev.off()
+      
+      if (is.numeric(resp_data)) {
+        # predict using this rf model
+        preds <- predict(rf_i)
+        
+        # run evaluation function, updating
+        rf_eval_df_i <- eval_model(resp_data, preds, run_name = paste0(dataset_name, "_run", j), 
+                                   plot_fit = FALSE, save_plot = TRUE, save_dir = "runs")
+        rf_eval_df <- rbind(rf_eval_df, cbind(rf_eval_df_i, 
+                                              OOB_mse_mean = mean(rf_i$mse),
+                                              OOB_rsq_mean = mean(rf_i$rsq)))
+      } else {
+        # run confusion matrix; round classication.error to 3 places
+        conf <- (rf_i$confusion)
+        conf[, ncol(conf)] <- round(conf[, ncol(conf)], 3)
+        
+        # calculate commission error for each column
+        comerr_vect <- c()
+        for (c in 1:(ncol(conf) - 1)) {
+          comerr_vect <- c(comerr_vect, round((sum(conf[, c]) - conf[c, c]) / sum(conf[, c]), 3))
+        }
+        
+        # subset to only values (not error rates) for summing
+        conf_vals <- conf[1:(nrow(conf) - 1), 1:(ncol(conf) - 1)]
+        
+        # calculate overall error, append to bottom row
+        overall_err <- round((sum(conf_vals) - sum(diag(conf_vals))) / sum(conf_vals), 3)
+        comerr_vect <- c(comerr_vect, overall_err)
+        
+        # append commission error 
+        conf <- rbind(conf, comerr_vect)
+        
+        # update names; print; export to csv
+        rownames(conf)[nrow(conf)] <- "commission error"
+        colnames(conf)[nrow(conf)] <- "ommission error"
+        #print(conf)
+        write.csv(conf, sprintf("runs/confusionMatrix_%s_run%s.csv", dataset_name, j))
+        
+        # error rate
+        rf_eval_df <- rbind(rf_eval_df, cbind(run = j, 
+                                              OOB_err.rate.est = rf_i$err.rate[nrow(rf_i$err.rate), 1],
+                                              confusion.error = conf[nrow(conf), ncol(conf)]))
       }
       
-      # subset to only values (not error rates) for summing
-      conf_vals <- conf[1:(nrow(conf) - 1), 1:(ncol(conf) - 1)]
       
-      # calculate overall error, append to bottom row
-      overall_err <- round((sum(conf_vals) - sum(diag(conf_vals))) / sum(conf_vals), 3)
-      comerr_vect <- c(comerr_vect, overall_err)
+      ## variable importance -----------
       
-      # append commission error 
-      conf <- rbind(conf, comerr_vect)
+      # make importance dataframe for this run
+      var_imp_df_i <- data.frame(var = rownames(rf_i$importance), 
+                                 importance_metr = rf_i$importance)
       
-      # update names; print; export to csv
-      rownames(conf)[nrow(conf)] <- "commission error"
-      colnames(conf)[nrow(conf)] <- "ommission error"
-      #print(conf)
-      write.csv(conf, sprintf("runs/confusionMatrix_%s_run%s.csv", resp, j))
+      # merge this importance df to existing one
+      var_imp_df <- merge(var_imp_df, var_imp_df_i)
       
-      # error rate
-      rf_eval_df <- rbind(rf_eval_df, cbind(run = j, 
-                                            OOB_err.rate.est = rf_i$err.rate[nrow(rf_i$err.rate), 1],
-                                            confusion.error = conf[nrow(conf), ncol(conf)]))
+      colnames(var_imp_df)[j + 1] <- paste0("run", j, "_", imp_metric_label)
+      
+      # plot variable importance
+      var_import_plot(rf_output = rf_i, var_file = variable_file, response_name = paste0(dataset_name, "_run", j), nvar_show = 20, 
+                      save_plot = TRUE, save_dir = "runs", return_df = FALSE)
+      
+      # variable ranks
+      imp_ordered <- var_imp_df_i[order(-var_imp_df_i[, 2]), ]
+      rownames(imp_ordered) <- 1:nrow(imp_ordered)
+      
+      ranks <- c()
+      for (v in 1:length(var_rank_df$var)) {
+        ranks <- c(ranks, as.numeric(rownames(imp_ordered)[which(imp_ordered$var == var_rank_df$var[v])]))
+      }
+      
+      var_rank_df <- cbind(var_rank_df, ranks)
+      colnames(var_rank_df)[j + 1] <- paste0("run", j, "_", dataset_name)
     }
     
     
-    ## variable importance -----------
+    # sum importance metric (Increase in Node Purity or Mean Decrease in Gini Index)
+    var_imp_df$imp_value_sum <- apply(var_imp_df[, 2:(nruns + 1)], 1, sum)
+    var_imp_df <- var_imp_df[order(var_imp_df$imp_value_sum, decreasing = TRUE), ]
+    var_imp_df$imp_value_rank <- 1:nrow(var_imp_df)
+    plot(var_imp_df$imp_value_rank, var_imp_df$imp_value_sum, xlab = "Overall Importance Rank", ylab = "Score (Sum of Importance Metric)", 
+         main = sprintf("Distribution of Variable Importance Metric Values (%s RF runs)", nruns))
     
-    # make importance dataframe for this run
-    var_imp_df_i <- data.frame(var = rownames(rf_i$importance), 
-                               importance_metr = rf_i$importance)
-    
-    # merge this importance df to existing one
-    var_imp_df <- merge(var_imp_df, var_imp_df_i)
-    
-    colnames(var_imp_df)[j + 1] <- paste0("run", j, "_", imp_metric_label)
-    
-    # plot variable importance
-    var_import_plot(rf_output = rf_i, var_file = variable_file, response_name = paste0(resp, j), nvar_show = 20, 
-                    save_plot = TRUE, save_dir = "runs", return_df = FALSE)
-    
-    # variable ranks
-    imp_ordered <- var_imp_df_i[order(-var_imp_df_i[, 2]), ]
-    rownames(imp_ordered) <- 1:nrow(imp_ordered)
-    
-    ranks <- c()
-    for (v in 1:length(var_rank_df$var)) {
-      ranks <- c(ranks, as.numeric(rownames(imp_ordered)[which(imp_ordered$var == var_rank_df$var[v])]))
+    # summarize var_imp_df
+    for (v in 1:nrow(var_imp_df)) {
+      var_imp_df$mean[v] <- mean(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
+      var_imp_df$median[v] <- median(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
+      var_imp_df$min[v] <- min(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
+      var_imp_df$max[v] <- max(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
+      var_imp_df$range[v] <- max(as.numeric(var_imp_df[v, 2:(nruns + 1)])) - min(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
+      var_imp_df$sd[v] <- sd(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
+      var_imp_df$var[v] <- variable_file$Label[which(variable_file$Variable == var_imp_df$var[v])]
     }
     
-    var_rank_df <- cbind(var_rank_df, ranks)
-    colnames(var_rank_df)[j + 1] <- paste0("run", j, "_", resp)
+    
+    # var_rank_df
+    # sum ranks to create rank score; order based on rank sum; assign cumulative ranks; plot rank score distribution
+    var_rank_df$rank_sum <- apply(var_rank_df[, 2:(nruns + 1)], 1, sum)
+    var_rank_df <- var_rank_df[order(var_rank_df$rank_sum), ]
+    var_rank_df$cum_rank <- 1:nrow(var_rank_df)
+    plot(var_rank_df$cum_rank, var_rank_df$rank_sum, xlab = "Overall Rank", ylab = "Score (Sum of Ranks)", 
+         main = sprintf("Distribution of Variable Rank Scores (%s RF runs)", nruns))
+    
+    # summarize var_rank_df
+    for (v in 1:nrow(var_rank_df)) {
+      var_rank_df$mean[v] <- mean(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
+      var_rank_df$median[v] <- median(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
+      var_rank_df$min[v] <- min(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
+      var_rank_df$max[v] <- max(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
+      var_rank_df$range[v] <- max(as.numeric(var_rank_df[v, 2:(nruns + 1)])) - min(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
+      var_rank_df$sd[v] <- sd(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
+      var_rank_df$var[v] <- variable_file$Label[which(variable_file$Variable == var_rank_df$var[v])]
+    }
+    
+    # append rankings to summary
+    rank_summary_df <- merge(rank_summary_df, data.frame(var_rank_df$var, var_rank_df$cum_rank, var_rank_df$rank_sum),
+                             by = "var_rank_df.var", all.y = TRUE)
+    colnames(rank_summary_df)[((d - 1) * 2 + 2):((d - 1) * 2 + 3)] <- 
+      c(paste0(dataset_name, "_cum_rank"), paste0(dataset_name, "_rank_sum")) # !!!!
+    
+    
+    # write tables
+    write.csv(rf_eval_df, sprintf("rf_eval_%s_%s.csv", dataset_name, Sys.Date()))
+    #write.csv(var_imp_df, sprintf("var_imp_df_%s_%s.csv", dataset_name, Sys.Date()))
+    write.csv(var_rank_df, sprintf("var_rank_%s_%s.csv", dataset_name, Sys.Date()))
   }
-  
-  
-  # sum importance metric (Increase in Node Purity or Mean Decrease in Gini Index)
-  var_imp_df$imp_value_sum <- apply(var_imp_df[, 2:(nruns + 1)], 1, sum)
-  var_imp_df <- var_imp_df[order(var_imp_df$imp_value_sum, decreasing = TRUE), ]
-  var_imp_df$imp_value_rank <- 1:nrow(var_imp_df)
-  plot(var_imp_df$imp_value_rank, var_imp_df$imp_value_sum, xlab = "Overall Importance Rank", ylab = "Score (Sum of Importance Metric)", 
-       main = sprintf("Distribution of Variable Importance Metric Values (%s RF runs)", nruns))
-  
-  # summarize var_imp_df
-  for (v in 1:nrow(var_imp_df)) {
-    var_imp_df$mean[v] <- mean(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
-    var_imp_df$median[v] <- median(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
-    var_imp_df$min[v] <- min(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
-    var_imp_df$max[v] <- max(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
-    var_imp_df$range[v] <- max(as.numeric(var_imp_df[v, 2:(nruns + 1)])) - min(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
-    var_imp_df$sd[v] <- sd(as.numeric(var_imp_df[v, 2:(nruns + 1)]))
-    var_imp_df$var[v] <- variable_file$Label[which(variable_file$Variable == var_imp_df$var[v])]
-  }
-  
-  
-  # var_rank_df
-  # sum ranks to create rank score; order based on rank sum; assign cumulative ranks; plot rank score distribution
-  var_rank_df$rank_sum <- apply(var_rank_df[, 2:(nruns + 1)], 1, sum)
-  var_rank_df <- var_rank_df[order(var_rank_df$rank_sum), ]
-  var_rank_df$cum_rank <- 1:nrow(var_rank_df)
-  plot(var_rank_df$cum_rank, var_rank_df$rank_sum, xlab = "Overall Rank", ylab = "Score (Sum of Ranks)", 
-       main = sprintf("Distribution of Variable Rank Scores (%s RF runs)", nruns))
-  
-  # summarize var_rank_df
-  for (v in 1:nrow(var_rank_df)) {
-    var_rank_df$mean[v] <- mean(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
-    var_rank_df$median[v] <- median(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
-    var_rank_df$min[v] <- min(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
-    var_rank_df$max[v] <- max(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
-    var_rank_df$range[v] <- max(as.numeric(var_rank_df[v, 2:(nruns + 1)])) - min(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
-    var_rank_df$sd[v] <- sd(as.numeric(var_rank_df[v, 2:(nruns + 1)]))
-    var_rank_df$var[v] <- variable_file$Label[which(variable_file$Variable == var_rank_df$var[v])]
-  }
-  
-  # append rankings to summary
-  rank_summary_df <- merge(rank_summary_df, data.frame(var_rank_df$var, var_rank_df$cum_rank, var_rank_df$rank_sum),
-                           by = "var_rank_df.var", all.y = TRUE)
-  colnames(rank_summary_df)[((nr-1)*2 + 2):((nr-1)*2 + 3)] <- c(paste0(resp, "_cum_rank"), paste0(resp, "_rank_sum")) # !!!!
-  
-  
-  # write tables
-  write.csv(rf_eval_df, sprintf("rf_eval_df_%s_%s.csv", resp, Sys.Date()))
-  #write.csv(var_imp_df, sprintf("var_imp_df_%s_%s.csv", resp, Sys.Date()))
-  write.csv(var_rank_df, sprintf("var_rank_df_%s_%s.csv", resp, Sys.Date()))
 }
 
 # write summary table
-write.csv(rank_summary_df, sprintf("rank_summary_df_%s.csv", Sys.Date()))
+write.csv(rank_summary_df, sprintf("rank_summary_df_%s_%s.csv", subset_var, Sys.Date()))
 
 Sys.time()
 
 #
 
-print(dirname(sys.frame()$ofile)) # ?
+#print(dirname(sys.frame()$ofile)) # ?
 
 
 ### ----------------------
 
+## aggregate eval tables
+
+setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out")
+
+eval_files <- list.files(".", pattern = "rf_eval")
+
+eval_summary <- data.frame()
+
+for (f in 1:length(eval_files)) {
+  fname <- eval_files[f]
+  eval_csv <- read.csv(fname, stringsAsFactors = FALSE)
+  colmeans <- as.data.frame(t(apply(eval_csv[, 3:11], 2, mean)))
+  
+  eval_summary <- rbind(eval_summary, data.frame(name = sub("rf_eval_CI_sp90th_tmedian_", "", fname), colmeans))
+}
+
+write.csv(eval_summary, sprintf("rf_eval_summary_%s.csv", Sys.Date()))
+
+##
+
 # individual
 
+'
 resp <- responses[1]
 resp_data <- lake_data[, resp]
 rf <- randomForest(x = pred_data, y = resp_data, na.action = na.omit)
 importance(rf, type = 2)
+'
