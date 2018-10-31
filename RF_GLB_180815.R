@@ -33,6 +33,7 @@ model_type <- "randomForest" # "randomForest" or "conditionalForest"
 subset_var <- "all"
 #subset_var <- "Ecoregion_L1_code"
 #subset_var <- "Ecoregion_L2_code"
+subset_var <- "xxxx"
 
 # select names of classes/regions with at least 25 observations
 if (subset_var == "all") {

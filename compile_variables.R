@@ -150,6 +150,15 @@ omernik$COMID <- as.character(omernik$COMID)
 omernik <- omernik[, c(1:5)]
 colnames(omernik) <- c("comid", "Ecoregion_L2_code", "Ecoregion_L2", "Ecoregion_L1_code", "Ecoregion_L1")
 
+# combine similar classes
+omernik$Ecoregion_L2_elev <- NA
+omernik$Ecoregion_L2_elev[which(omernik$Ecoregion_L2_code %in% c("8.1", "8.2", "8.3", "9.2"))] <- "lowElev"
+omernik$Ecoregion_L2_elev[which(omernik$Ecoregion_L2_code %in% c("5.3", "8.4"))] <- "hiElev"
+omernik$Ecoregion_L2_elev[which(omernik$Ecoregion_L2_code %in% c("5.2"))] <- "hiLat"
+
+omernik$Ecoregion_L2_elev2 <- NA
+omernik$Ecoregion_L2_combo[which(omernik$Ecoregion_L2_code %in% c("8.1", "8.2", "8.3", "9.2"))] <- "lowElev"
+omernik$Ecoregion_L2_elev[which(omernik$Ecoregion_L2_code %in% c("8.1", "8.2", "8.3", "9.2"))] <- "lowElev"
 
 # ----- specify variables
 vars <- list(ci, lake_metrics, air_temp, precip, nutrients, lakecat, atilla, lake_edge, buff, omernik)
