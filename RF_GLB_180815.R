@@ -17,10 +17,10 @@ dir_analysis <- "O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis"
 setwd(dir_analysis)
 
 # specify variable file to use for naming
-variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-10-29.csv", stringsAsFactors = FALSE)
+variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-11-01.csv", stringsAsFactors = FALSE)
 
 # read in data
-lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-10-29.csv")
+lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-11-01.csv")
 lake_data <- lake_data[, -which(colnames(lake_data) == "X")] # remove X column
 
 # select model type
@@ -30,17 +30,19 @@ model_type <- "randomForest" # "randomForest" or "conditionalForest"
 ## subset - ecoregion ------------
 
 # set variable to subset by (or "all)
-subset_var <- "all"
+#colnames(lake_data)[which(grepl("Ecoregion", colnames(lake_data)))]
+#subset_var <- "all"
 #subset_var <- "Ecoregion_L1_code"
 #subset_var <- "Ecoregion_L2_code"
-subset_var <- "xxxx"
+subset_var <- "Ecoregion_L2_elev_lat"
+#subset_var <- "Ecoregion_L2_elev"
 
 # select names of classes/regions with at least 25 observations
 if (subset_var == "all") {
   data_subsets <- "all"
 } else {
   subset_table <- table(lake_data[, which(colnames(lake_data) == subset_var)])
-  data_subsets <- names(subset_table[subset_table >= 25])
+  data_subsets <- names(subset_table[subset_table >= 0]) # set minimum group size
 }
 
 
@@ -126,7 +128,7 @@ for (d in 1:length(data_subsets)) {
   for (nr in 1:length(responses)) {
     resp <- responses[nr]
     
-    dataset_name <- paste0(data_subsets[d]"_", resp)
+    dataset_name <- paste0(data_subsets[d], "_", resp)
     
     resp_data <- lake_data_use[, resp]
     pred_data <- lake_data_use[, pred_vars]
@@ -323,7 +325,7 @@ Sys.time()
 
 setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out")
 
-eval_files <- list.files(".", pattern = "rf_eval")
+eval_files <- list.files(".", pattern = "rf_eval_")
 
 eval_summary <- data.frame()
 
@@ -335,7 +337,7 @@ for (f in 1:length(eval_files)) {
   eval_summary <- rbind(eval_summary, data.frame(name = sub("rf_eval_CI_sp90th_tmedian_", "", fname), colmeans))
 }
 
-write.csv(eval_summary, sprintf("rf_eval_summary_%s.csv", Sys.Date()))
+write.csv(eval_summary, sprintf("rf_evals_summary_%s.csv", Sys.Date()))
 
 ##
 
