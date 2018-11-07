@@ -17,10 +17,10 @@ dir_analysis <- "O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis"
 setwd(dir_analysis)
 
 # specify variable file to use for naming
-variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-11-01.csv", stringsAsFactors = FALSE)
+variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-11-06.csv", stringsAsFactors = FALSE)
 
 # read in data
-lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-11-01.csv")
+lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-11-06.csv")
 lake_data <- lake_data[, -which(colnames(lake_data) == "X")] # remove X column
 
 # select model type
@@ -31,11 +31,13 @@ model_type <- "randomForest" # "randomForest" or "conditionalForest"
 
 # set variable to subset by (or "all)
 #colnames(lake_data)[which(grepl("Ecoregion", colnames(lake_data)))]
+
 #subset_var <- "all"
 #subset_var <- "Ecoregion_L1_code"
 #subset_var <- "Ecoregion_L2_code"
-subset_var <- "Ecoregion_L2_elev_lat"
+#subset_var <- "Ecoregion_L2_elev_lat"
 #subset_var <- "Ecoregion_L2_elev"
+subset_var <- "Ecoregion_L2_highelev_lat" # use this one ***
 
 # select names of classes/regions with at least 25 observations
 if (subset_var == "all") {
@@ -86,7 +88,7 @@ reorder_levels <- function(input_dat) {
 ## predictors ---------
 
 # predictors
-pred_vars_all <- colnames(lake_data)[4:(which(colnames(lake_data) == "Ecoregion_L1") - 1)]
+pred_vars_all <- colnames(lake_data)[4:(which(colnames(lake_data) == "Ecoregion_L2_code") - 1)]
 
 pred_vars <- pred_vars_all[-which(pred_vars_all %in% c("ShorelineL",
                                                        "ShorelineD",
@@ -167,7 +169,7 @@ for (d in 1:length(data_subsets)) {
     
     set.seed(1)
     
-    nruns <- 20
+    nruns <- 5
     
     # for each model run...
     for (j in 1:nruns) {
@@ -295,19 +297,19 @@ for (d in 1:length(data_subsets)) {
       var_rank_df$var[v] <- variable_file$Label[which(variable_file$Variable == var_rank_df$var[v])]
     }
     
-    # append rankings to summary
-    rank_summary_df <- merge(rank_summary_df, data.frame(var_rank_df$var, var_rank_df$cum_rank, var_rank_df$rank_sum),
-                             by = "var_rank_df.var", all.y = TRUE)
-    colnames(rank_summary_df)[((d - 1) * 2 + 2):((d - 1) * 2 + 3)] <- 
-      c(paste0(dataset_name, "_cum_rank"), paste0(dataset_name, "_rank_sum")) # !!!!
-    
-    
     # write tables
     write.csv(rf_eval_df, sprintf("rf_eval_%s_%s.csv", dataset_name, Sys.Date()))
     #write.csv(var_imp_df, sprintf("var_imp_df_%s_%s.csv", dataset_name, Sys.Date()))
     write.csv(var_rank_df, sprintf("var_rank_%s_%s.csv", dataset_name, Sys.Date()))
   }
 }
+
+
+# append rankings to summary  *****************************
+rank_summary_df <- merge(rank_summary_df, data.frame(var_rank_df$var, var_rank_df$cum_rank, var_rank_df$rank_sum),
+                         by = "var_rank_df.var", all.y = TRUE)
+colnames(rank_summary_df)[((d - 1) * 2 + 2):((d - 1) * 2 + 3)] <- 
+  c(paste0(dataset_name, "_cum_rank"), paste0(dataset_name, "_rank_sum")) # !!!!
 
 # write summary table
 write.csv(rank_summary_df, sprintf("rank_summary_df_%s_%s.csv", subset_var, Sys.Date()))

@@ -159,6 +159,11 @@ omernik$Ecoregion_L2_elev <- NA
 omernik$Ecoregion_L2_elev[which(omernik$Ecoregion_L2_code %in% c("5.2", "8.1", "8.2", "8.3", "9.2"))] <- "lowElev_hiLat"
 omernik$Ecoregion_L2_elev[which(omernik$Ecoregion_L2_code %in% c("5.3", "8.4"))] <- "hiElev"
 
+omernik$Ecoregion_L2_highelev_lat <- NA
+omernik$Ecoregion_L2_highelev_lat[which(omernik$Ecoregion_L2_code %in% c("8.1", "8.2", "8.3", "9.2"))] <- "lowElev"
+omernik$Ecoregion_L2_highelev_lat[which(omernik$Ecoregion_L2_code %in% c("5.3", "8.4", "5.2"))] <- "hiElevHiLat"
+
+
 # ----- specify variables
 vars <- list(ci, lake_metrics, air_temp, precip, nutrients, lakecat, atilla, lake_edge, buff, omernik)
 varnames <- c("ci", "lake_metrics", "air_temp", "precip", "nutrients", "lakecat", "atilla", "lake_edge", "buff", "omernik")
