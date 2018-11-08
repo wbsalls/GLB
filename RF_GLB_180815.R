@@ -109,10 +109,6 @@ pred_vars <- pred_vars_all[-which(pred_vars_all %in% c("ShorelineL",
 
 #
 
-# initiate rank summary data frame
-rank_summary_df <- data.frame(var_rank_df.var = rep(NA, length(pred_vars)))
-
-
 # ----------------------------------
 
 Sys.time()
@@ -305,28 +301,28 @@ for (d in 1:length(data_subsets)) {
 }
 
 
-# append rankings to summary  *****************************
-rank_summary_df <- merge(rank_summary_df, data.frame(var_rank_df$var, var_rank_df$cum_rank, var_rank_df$rank_sum),
-                         by = "var_rank_df.var", all.y = TRUE)
-colnames(rank_summary_df)[((d - 1) * 2 + 2):((d - 1) * 2 + 3)] <- 
-  c(paste0(dataset_name, "_cum_rank"), paste0(dataset_name, "_rank_sum")) # !!!!
-
-# write summary table
-write.csv(rank_summary_df, sprintf("rank_summary_df_%s_%s.csv", subset_var, Sys.Date()))
-
-Sys.time()
-
-#
-
-#print(dirname(sys.frame()$ofile)) # ?
-
-
-### ----------------------
-
-## aggregate eval tables
 
 setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out")
 
+## aggregate ranking tables
+rank_files <- list.files(".", pattern = "var_rank_")
+
+rank_summary <- data.frame()
+
+for (f in 1:length(rank_files)) {
+  fname <- rank_files[f]
+  rank_csv <- read.csv(fname, stringsAsFactors = FALSE)
+  ranks_f <- rank_csv[, which(colnames(rank_csv) %in% c("var", "cum_rank"))]
+  
+  rank_summary <- merge(rank_summary, ranks_f,
+                        by = "var", all.y = TRUE)
+  colnames(rank_summary)[f + 1] <- substr(fname, 1, (regexpr("_CI_sp90th_tmedian_2018-11-06.csv", fname) - 1))
+}
+
+write.csv(rank_summary, sprintf("rank_summary_%s_%s.csv", subset_var, Sys.Date()))
+
+
+## aggregate eval tables
 eval_files <- list.files(".", pattern = "rf_eval_")
 
 eval_summary <- data.frame()
@@ -340,6 +336,9 @@ for (f in 1:length(eval_files)) {
 }
 
 write.csv(eval_summary, sprintf("rf_evals_summary_%s.csv", Sys.Date()))
+
+
+### ----------------------
 
 ##
 
