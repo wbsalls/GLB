@@ -307,19 +307,21 @@ setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out")
 ## aggregate ranking tables
 rank_files <- list.files(".", pattern = "var_rank_")
 
-rank_summary <- data.frame()
+# initiate rank summary table with first rank file
+rank_summary <- read.csv(rank_files[1], stringsAsFactors = FALSE)[, which(colnames(rank_csv) %in% c("var", "cum_rank"))]
+colnames(rank_summary)[2] <- substr(rank_files[1], 5, (regexpr("_CI_sp90th_tmedian_2018-11-06.csv", rank_files[1]) - 1))
 
-for (f in 1:length(rank_files)) {
+# for each rank file: read csv, pull var and rank columns, merge to rank_summary df, rename column
+for (f in 2:length(rank_files)) {
   fname <- rank_files[f]
   rank_csv <- read.csv(fname, stringsAsFactors = FALSE)
   ranks_f <- rank_csv[, which(colnames(rank_csv) %in% c("var", "cum_rank"))]
   
-  rank_summary <- merge(rank_summary, ranks_f,
-                        by = "var", all.y = TRUE)
-  colnames(rank_summary)[f + 1] <- substr(fname, 1, (regexpr("_CI_sp90th_tmedian_2018-11-06.csv", fname) - 1))
+  rank_summary <- merge(rank_summary, ranks_f, by = "var", all.y = TRUE)
+  colnames(rank_summary)[f + 1] <- substr(fname, 5, (regexpr("_CI_sp90th_tmedian_2018-11-06.csv", fname) - 1))
 }
 
-write.csv(rank_summary, sprintf("rank_summary_%s_%s.csv", subset_var, Sys.Date()))
+write.csv(rank_summary, sprintf("rank_summary_%s.csv", Sys.Date()))
 
 
 ## aggregate eval tables
