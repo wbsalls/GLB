@@ -111,12 +111,15 @@ pred_vars <- pred_vars_all[-which(pred_vars_all %in% c("ShorelineL",
 
 # ----------------------------------
 
+rf_list <- list()
+treeMSE_df <- data.frame()
+
 Sys.time()
 
 # for each subset (ecoregion)...
 for (d in 1:length(data_subsets)) {
   
-  if (data_subsets == "all") {
+  if ("all" %in% data_subsets) {
     lake_data_use <- lake_data
   } else {
     lake_data_use <- lake_data[which(lake_data[, which(colnames(lake_data) == subset_var)] == data_subsets[d]), ]
@@ -165,7 +168,9 @@ for (d in 1:length(data_subsets)) {
     
     set.seed(1)
     
-    nruns <- 5
+    nruns <- 100
+    
+    rf_list_subset <- list()
     
     # for each model run...
     for (j in 1:nruns) {
@@ -174,6 +179,9 @@ for (d in 1:length(data_subsets)) {
       # run rf function
       rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit) # randomForest
       
+      # append this RF to list of RFs in this subset, and MSE to treeMSE_df
+      rf_list_subset[[j]] <- rf_i
+      treeMSE_df <- rbind(treeMSE_df, data.frame(subset = data_subsets[d], subset_num = d, run = j, tree = 1:rf_i$ntree, mse = rf_i$mse))
       
       ## evaluate -----------
       
@@ -254,6 +262,8 @@ for (d in 1:length(data_subsets)) {
       colnames(var_rank_df)[j + 1] <- paste0("run", j, "_", dataset_name)
     }
     
+    rf_list[[d]] <- rf_list_subset
+    
     
     # sum importance metric (Increase in Node Purity or Mean Decrease in Gini Index)
     var_imp_df$imp_value_sum <- apply(var_imp_df[, 2:(nruns + 1)], 1, sum)
@@ -308,8 +318,9 @@ setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out")
 rank_files <- list.files(".", pattern = "var_rank_")
 
 # initiate rank summary table with first rank file
-rank_summary <- read.csv(rank_files[1], stringsAsFactors = FALSE)[, which(colnames(rank_csv) %in% c("var", "cum_rank"))]
-colnames(rank_summary)[2] <- substr(rank_files[1], 5, (regexpr("_CI_sp90th_tmedian_2018-11-06.csv", rank_files[1]) - 1))
+rank_file1 <- read.csv(rank_files[1], stringsAsFactors = FALSE)
+rank_summary <- rank_file1[, which(colnames(rank_file1) %in% c("var", "cum_rank"))]
+colnames(rank_summary)[2] <- substr(rank_files[1], 5, (regexpr("_CI_sp90th_", rank_files[1]) - 1))
 
 # for each rank file: read csv, pull var and rank columns, merge to rank_summary df, rename column
 for (f in 2:length(rank_files)) {
@@ -318,10 +329,10 @@ for (f in 2:length(rank_files)) {
   ranks_f <- rank_csv[, which(colnames(rank_csv) %in% c("var", "cum_rank"))]
   
   rank_summary <- merge(rank_summary, ranks_f, by = "var", all.y = TRUE)
-  colnames(rank_summary)[f + 1] <- substr(fname, 5, (regexpr("_CI_sp90th_tmedian_2018-11-06.csv", fname) - 1))
+  colnames(rank_summary)[f + 1] <- substr(fname, 5, (regexpr("_CI_sp90th_", fname) - 1))
 }
 
-write.csv(rank_summary, sprintf("rank_summary_%s.csv", Sys.Date()))
+write.csv(rank_summary, sprintf("var_ranks_summary_%s.csv", Sys.Date()))
 
 
 ## aggregate eval tables
@@ -338,6 +349,9 @@ for (f in 1:length(eval_files)) {
 }
 
 write.csv(eval_summary, sprintf("rf_evals_summary_%s.csv", Sys.Date()))
+
+## write treeMSE_df
+write.csv(treeMSE_df, sprintf("treeMSE_df_%s.csv", Sys.Date()))
 
 
 ### ----------------------
