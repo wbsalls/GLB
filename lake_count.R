@@ -2,8 +2,8 @@
 
 # how many samples per year? per month?
 
-#setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/Economics")
-setwd("/Users/wilsonsalls/Desktop/EPA/econ")
+setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/Economics")
+#setwd("/Users/wilsonsalls/Desktop/EPA/econ")
 
 sta <- read.csv("stations_WQDP_CHLa_09_27_17.csv", stringsAsFactors = FALSE)
 result <- read.csv("result_chla_physical_chemical_09_27_17.csv", stringsAsFactors = FALSE)
@@ -41,11 +41,41 @@ samp_pts_data_lakes <- cbind(samp_ptsdf@data, samp_pts_data_lakes) # add sample 
 # take only points that fall in lakes
 samp_pts_inlakes <- samp_pts_data_lakes[which(!is.na(samp_pts_data_lakes$COMID)), ]
 
+## filter lakes -----------------------
+length(unique(samp_pts_inlakes$COMID))
+
+# GL
+samp_pts_inlakes <- dplyr::filter(samp_pts_inlakes, !grepl("EPA_GLNPO", MonitoringLocationIdentifier))
+length(unique(samp_pts_inlakes$COMID))
+
+# neg chla
+library(dplyr)
+samp_pts_inlakes <- samp_pts_inlakes %>%  filter(ResultMeasureValue >= 0)
+length(unique(samp_pts_inlakes$COMID))
+
+# surface water
+samp_pts_inlakes <- filter(samp_pts_inlakes, ActivityMediaSubdivisionName %in% "Surface Water")
+length(unique(samp_pts_inlakes$COMID))
+
+
+## counts -----------------------------
+
 sum(!is.na(samp_pts_lakes$COMID)) # n points
 
 length(unique(samp_pts_inlakes$COMID)) # n lakes
 
 write.csv(samp_pts_inlakes, "result_station_inLakes_100mBuff.csv")
+
+
+# take only lakes that contain points
+inlakes <- lakes_buff_wgs[which(lakes_buff_wgs$COMID %in% samp_pts_inlakes$COMID), ]
+inlakes_centroids <- gCentroid(inlakes, byid = TRUE)
+
+us <- readOGR("O:/PRIV/NERL_ORD_CYAN/Salls_working/geospatial_general/US", "cb_2015_us_state_20m")
+us <- spTransform(us, proj4string(inlakes_centroids))
+
+plot(inlakes_centroids, pch = 20)
+plot(us, add = TRUE)
 
 
 # date counts
@@ -59,20 +89,7 @@ barplot(table(samp_pts_inlakes$year), xlab = "year", ylab = "frequency")
 barplot(table(samp_pts_inlakes$month), xlab = "month", ylab = "frequency")
 
 
-## filter lakes
-length(unique(samp_pts_inlakes$COMID))
 
-# GL
-samp_pts_inlakes <- dplyr::filter(samp_pts_inlakes, !grepl("EPA_GLNPO", MonitoringLocationIdentifier))
-length(unique(samp_pts_inlakes$COMID))
-
-# neg chla
-samp_pts_inlakes <- samp_pts_inlakes %>%  filter(ResultMeasureValue >= 0)
-length(unique(samp_pts_inlakes$COMID))
-
-# surface water
-samp_pts_inlakes <- filter(samp_pts_inlakes, ActivityMediaSubdivisionName %in% "Surface Water")
-length(unique(samp_pts_inlakes$COMID))
 
 
 ## other ways of counting
