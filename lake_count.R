@@ -2,7 +2,8 @@
 
 # how many samples per year? per month?
 
-setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/Economics")
+#setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/Economics")
+setwd("/Users/wilsonsalls/Desktop/EPA/econ")
 
 sta <- read.csv("stations_WQDP_CHLa_09_27_17.csv", stringsAsFactors = FALSE)
 result <- read.csv("result_chla_physical_chemical_09_27_17.csv", stringsAsFactors = FALSE)
