@@ -107,6 +107,18 @@ pred_vars <- pred_vars_all[-which(pred_vars_all %in% c("ShorelineL",
 # predictors - see NAs
 #for (p in 4:(which(colnames(lake_data) == "Ecoregion_L1") - 1)) {print(paste0(sum(is.na(lake_data[, p])), " : ", colnames(lake_data)[p]))}
 
+# use only top 25 predictors (if desired)
+'
+ranks_run <- read.csv("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out/current_all/var_ranks_summary_2018-11-13.csv", stringsAsFactors = FALSE)
+
+# pick one (if desired)
+vars_top <- ranks_run$var[which(ranks_run$rank_hiElevHiLat %in% 1:25)]
+#vars_top <- ranks_run$var[which(ranks_run$rank_lowElev %in% 1:25)]
+
+var_key <- read.csv("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/variable_key.csv", stringsAsFactors = FALSE)
+pred_vars <- var_key$Variable[which(var_key$Label %in% vars_top)]
+'
+
 #
 
 # ----------------------------------
@@ -311,6 +323,10 @@ for (d in 1:length(data_subsets)) {
 }
 
 
+## write treeMSE_df
+write.csv(treeMSE_df, sprintf("treeMSE_df_%s.csv", Sys.Date()))
+
+
 
 setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out")
 
@@ -349,9 +365,6 @@ for (f in 1:length(eval_files)) {
 }
 
 write.csv(eval_summary, sprintf("rf_evals_summary_%s.csv", Sys.Date()))
-
-## write treeMSE_df
-write.csv(treeMSE_df, sprintf("treeMSE_df_%s.csv", Sys.Date()))
 
 
 ### ----------------------
