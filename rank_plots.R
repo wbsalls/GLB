@@ -41,10 +41,14 @@ ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank)) +
 
 
 # box plot ----------------------------
-ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank)) + 
+ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank), base_family = "TT Arial") + 
   geom_boxplot() + 
   stat_summary(fun.y="mean", geom="point", color = "red") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  theme(text = element_text(size=16),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.margin= unit(c(0.5,0.5,0.5,1.5), "cm"),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
   xlab("variable") + 
   ylab("ranks") + 
   #scale_y_reverse() +
@@ -53,4 +57,5 @@ ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank)) +
   ggtitle("All Lakes") # ***** select *****
 #ggtitle("High Elevation and Latitude") # ***** select *****
 #ggtitle("Low Elevation and Latitude") # ***** select *****
+
 
