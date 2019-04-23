@@ -6,15 +6,13 @@ library(randomForest)
 #library(caret)
 #library(h2o)
 
-script_dir <- "C:/Users/WSalls/Desktop/Git/GLB"
-#script_dir <- "/Users/wilsonsalls/Desktop/Git/GLB"
+source("C:/Users/WSalls/Desktop/Git/GLB/RF_functions_180530.R")
+source("/Users/wilsonsalls/Desktop/Git/GLB/RF_functions_180530.R")
 
-source(file.path(script_dir, "RF_functions_180530.R")) # calls version from same folder (in this case, Git)
+setwd("O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis")
+setwd("/Users/wilsonsalls/Desktop/EPA/GLB/")
 
-dir_analysis <- "O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis"
-#dir_analysis <- "/Users/wilsonsalls/Desktop/EPA/GLB/Analysis/"
-
-setwd(dir_analysis)
+dir_analysis <- getwd() # for output file path (used later)
 
 # specify variable file to use for naming
 variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-11-06.csv", stringsAsFactors = FALSE)
@@ -29,15 +27,18 @@ model_type <- "randomForest" # "randomForest" or "conditionalForest"
 
 ## subset - ecoregion ------------
 
-# set variable to subset by (or "all)
+# set variable to subset by (or "all")
 #colnames(lake_data)[which(grepl("Ecoregion", colnames(lake_data)))]
-
 #subset_var <- "all"
 #subset_var <- "Ecoregion_L1_code"
 #subset_var <- "Ecoregion_L2_code"
 #subset_var <- "Ecoregion_L2_elev_lat"
 #subset_var <- "Ecoregion_L2_elev"
 subset_var <- "Ecoregion_L2_highelev_lat" # use this one ***
+
+# subset each region for running summary stats
+lake_data_lo <- lake_data[which(lake_data$Ecoregion_L2_highelev_lat == "lowElev"),]
+lake_data_hi <- lake_data[which(lake_data$Ecoregion_L2_highelev_lat == "hiElevHiLat"),]
 
 # select names of classes/regions with at least 25 observations
 if (subset_var == "all") {
@@ -119,7 +120,14 @@ var_key <- read.csv("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/variable_k
 pred_vars <- var_key$Variable[which(var_key$Label %in% vars_top)]
 '
 
-#
+# correlation plot
+data_cor_all <- lake_data # lake_data, lake_data_lo, lake_data_hi
+data_cor <- cbind(data_cor_all[, which(colnames(data_cor_all) %in% c("CI_sp90th_tmedian", "CI_sp90th_tmax")),], 
+                  data_cor_all[, which(colnames(data_cor_all) %in% pred_vars)])
+cor_vars <- cor(data_cor, use = "pairwise.complete.obs")
+
+library(corrplot)
+corrplot(cor_vars)
 
 # ----------------------------------
 

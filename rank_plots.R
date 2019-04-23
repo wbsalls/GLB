@@ -1,6 +1,7 @@
 library(ggplot2)
 
 setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out/current")
+setwd("/Users/wilsonsalls/Desktop/EPA/GLB/RF/out/current")
 
 # ***** select one *****
 ranks_all <- read.csv("var_rank_all_CI_sp90th_tmedian_2018-12-19.csv", stringsAsFactors = FALSE) 
