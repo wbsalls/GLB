@@ -44,16 +44,17 @@ ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank), base_family = "TT
   geom_boxplot() + 
   stat_summary(fun.y="mean", geom="point", color = "red") + 
   theme(text = element_text(size=16),
-        axis.text.x = element_text(angle = 45, hjust = 1), plot.margin= unit(c(0.5,0.5,0.5,1.5), "cm") #comma to include background
-        #panel.grid.major = element_blank(), panel.grid.minor = element_blank(), # comment out to include background
-        #panel.background = element_blank(), axis.line = element_line(colour = "black") # comment out to include background
+        axis.text.x = element_text(angle = 45, hjust = 1), plot.margin= unit(c(0.5,0.5,0.5,1.5), "cm"), #comma if excluding bg
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(), # eliminates background
+        panel.background = element_blank(), axis.line = element_line(colour = "black") # eliminates background
         ) +
   xlab("variable") + 
   ylab("ranks") + 
   #scale_y_reverse() +
-  scale_y_continuous(breaks = seq(min(ranks_long$rank), max(ranks_long$rank), by = 4),  
+  scale_y_continuous(breaks = seq(0, max(ranks_long$rank), by = 5),  
                      trans = 'reverse') + 
-  ggtitle(title)
+  ggtitle(title) +
+  geom_vline(xintercept = seq(1.5, 25.5, 1), linetype = "dotted", color = "black", size)
 
 '
 # violint plot, vertical ----------------------------
