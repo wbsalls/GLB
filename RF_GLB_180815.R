@@ -126,6 +126,8 @@ data_cor <- cbind(data_cor_all[, which(colnames(data_cor_all) %in% c("CI_sp90th_
                   data_cor_all[, which(colnames(data_cor_all) %in% pred_vars)])
 cor_vars <- cor(data_cor, use = "pairwise.complete.obs")
 
+write.csv(cor_vars, "O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/correlations.csv")
+
 library(corrplot)
 corrplot(cor_vars)
 
