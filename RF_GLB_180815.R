@@ -29,12 +29,12 @@ model_type <- "randomForest" # "randomForest" or "conditionalForest"
 
 # set variable to subset by (or "all")
 #colnames(lake_data)[which(grepl("Ecoregion", colnames(lake_data)))]
-#subset_var <- "all"
+subset_var <- "all"
 #subset_var <- "Ecoregion_L1_code"
 #subset_var <- "Ecoregion_L2_code"
 #subset_var <- "Ecoregion_L2_elev_lat"
 #subset_var <- "Ecoregion_L2_elev"
-subset_var <- "Ecoregion_L2_highelev_lat" # use this one ***
+#subset_var <- "Ecoregion_L2_highelev_lat" # use this one ***
 
 # subset each region for running summary stats
 lake_data_lo <- lake_data[which(lake_data$Ecoregion_L2_highelev_lat == "lowElev"),]
