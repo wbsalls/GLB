@@ -121,6 +121,7 @@ pred_vars <- var_key$Variable[which(var_key$Label %in% vars_top)]
 '
 
 # correlation plot
+'
 data_cor_all <- lake_data # lake_data, lake_data_lo, lake_data_hi
 data_cor <- cbind(data_cor_all[, which(colnames(data_cor_all) %in% c("CI_sp90th_tmedian", "CI_sp90th_tmax")),], 
                   data_cor_all[, which(colnames(data_cor_all) %in% pred_vars)])
@@ -130,6 +131,8 @@ write.csv(cor_vars, "O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/correlatio
 
 library(corrplot)
 corrplot(cor_vars)
+'
+
 
 # ----------------------------------
 
@@ -176,7 +179,7 @@ for (d in 1:length(data_subsets)) {
     
     
     # multi RF runs -----------------------------------------------------------------------------------------------
-    setwd(file.path(dir_analysis, "RF/out/"))
+    setwd(file.path(dir_analysis, "RF/out_msqrt/"))
     
     rf_eval_df <- data.frame()
     var_imp_df <- data.frame(var = as.character(pred_vars), stringsAsFactors = FALSE)
@@ -199,7 +202,8 @@ for (d in 1:length(data_subsets)) {
       print(sprintf("   *** %s: run #%s of %s ***   ", dataset_name, j, nruns))
       
       # run rf function
-      rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit) # randomForest
+      rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit, mtry = floor(sqrt(ncol(pred_data)))) # randomForest
+      #rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit) # randomForest
       
       # append this RF to list of RFs in this subset, and MSE to treeMSE_df
       rf_list_subset[[j]] <- rf_i
@@ -337,8 +341,6 @@ for (d in 1:length(data_subsets)) {
 write.csv(treeMSE_df, sprintf("treeMSE_df_%s.csv", Sys.Date()))
 
 
-
-setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out")
 
 ## aggregate ranking tables
 rank_files <- list.files(".", pattern = "var_rank_")
