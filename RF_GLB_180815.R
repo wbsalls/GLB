@@ -12,7 +12,7 @@ source("/Users/wilsonsalls/Desktop/Git/GLB/RF_functions_180530.R")
 setwd("O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis")
 setwd("/Users/wilsonsalls/Desktop/EPA/GLB/")
 
-dir_analysis <- getwd() # for output file path (used later)
+output_path <- file.path(getwd(), "RF/out_msqrt_rmCor/") # used later
 
 # specify variable file to use for naming
 variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-11-06.csv", stringsAsFactors = FALSE)
@@ -121,17 +121,19 @@ pred_vars <- var_key$Variable[which(var_key$Label %in% vars_top)]
 '
 
 # correlation plot
-'
+
 data_cor_all <- lake_data # lake_data, lake_data_lo, lake_data_hi
-data_cor <- cbind(data_cor_all[, which(colnames(data_cor_all) %in% c("CI_sp90th_tmedian", "CI_sp90th_tmax")),], 
+data_cor <- cbind(data_cor_all[, which(colnames(data_cor_all) %in% c("CI_sp90th_tmedian")),], 
                   data_cor_all[, which(colnames(data_cor_all) %in% pred_vars)])
 cor_vars <- cor(data_cor, use = "pairwise.complete.obs")
+
+sum(cor_vars > 0.7) - ncol(data_cor) # how many correlations exceed 7?
 
 write.csv(cor_vars, "O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/correlations.csv")
 
 library(corrplot)
 corrplot(cor_vars)
-'
+
 
 
 # ----------------------------------
@@ -179,7 +181,7 @@ for (d in 1:length(data_subsets)) {
     
     
     # multi RF runs -----------------------------------------------------------------------------------------------
-    setwd(file.path(dir_analysis, "RF/out_msqrt/"))
+    setwd(output_path)
     
     rf_eval_df <- data.frame()
     var_imp_df <- data.frame(var = as.character(pred_vars), stringsAsFactors = FALSE)
