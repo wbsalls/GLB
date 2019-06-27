@@ -21,8 +21,10 @@ if (subset == "all") {
   title <- "Low Elevation and Latitude"
 }
 
-# take top 25 only, if desired
-ranks <- ranks[ranks$cum_rank <= 25, ]
+# number of variables to show (decided to show top 25 for paper)
+nvar <- length(unique(ranks_all$var)) # 88 variables total
+#nvar <- 25 # <<<< subset here <<<<
+ranks <- ranks[ranks$cum_rank <= nvar, ]
 
 # convert wide rank table to long
 ranks <- ranks[, 2:(which(colnames(ranks) == "rank_sum") - 1)]
@@ -39,10 +41,9 @@ for (c in 2:ncol(ranks)) {
 # reorder factor levels of vars
 #levels(ranks_long$var) <- as.character(ranks$var)
 
-# box plot ---------------------------- # 900 x 700
+# box plot ---------------------------- # 900 x 700 (1800 x 1200 for all 88)
 ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank), base_family = "TT Arial") + 
   geom_boxplot() + 
-  stat_summary(fun.y="mean", geom="point", color = "red") + 
   theme(text = element_text(size=16),
         axis.text.x = element_text(angle = 45, hjust = 1), plot.margin= unit(c(0.5,0.5,0.5,1.5), "cm"), #comma if excluding bg
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(), # eliminates background
@@ -54,7 +55,12 @@ ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank), base_family = "TT
   scale_y_continuous(breaks = seq(0, max(ranks_long$rank), by = 5),  
                      trans = 'reverse') + 
   ggtitle(title) +
-  geom_vline(xintercept = seq(1.5, 25.5, 1), linetype = "dotted", color = "black", size)
+  geom_vline(xintercept = seq(1.5, (nvar + 0.5), 1), linetype = "dotted", color = "black", size) + # adds vertical lines
+  geom_hline(yintercept = seq(0, (floor(max(ranks_long$rank) / 5) * 5), 5), linetype = "dotted", color = "black", size) + # adds horizontal lines
+  geom_boxplot() +
+  stat_summary(fun.y="mean", geom="point", color = "red")
+
+#
 
 '
 # violint plot, vertical ----------------------------
