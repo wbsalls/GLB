@@ -6,16 +6,15 @@ library(randomForest)
 #library(caret)
 #library(h2o)
 
-source("C:/Users/WSalls/Desktop/Git/GLB/RF_functions_180530.R")
-source("/Users/wilsonsalls/Desktop/Git/GLB/RF_functions_180530.R")
+source("C:/Users/WSALLS/Git/GLB/RF_functions_180530.R")
 
 setwd("O:\\PRIV\\NERL_ORD_CYAN\\Salls_working\\GLB\\Analysis")
-setwd("/Users/wilsonsalls/Desktop/EPA/GLB/")
+#setwd("/Users/wilsonsalls/Desktop/EPA/GLB/")
 
-output_path <- file.path(getwd(), "RF/out_msqrt_rmCor/") # used later
+output_path <- file.path(getwd(), "RF/out_check3/") # used later
 
 # specify variable file to use for naming
-variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2018-11-06.csv", stringsAsFactors = FALSE)
+variable_file <- read.csv("GLB_LandscapeAnalysis_variables_2020-01-23.csv", stringsAsFactors = FALSE)
 
 # read in data
 lake_data <- read.csv("GLB_LandscapeAnalysis_data_2018-11-06.csv")
@@ -29,12 +28,12 @@ model_type <- "randomForest" # "randomForest" or "conditionalForest"
 
 # set variable to subset by (or "all")
 #colnames(lake_data)[which(grepl("Ecoregion", colnames(lake_data)))]
-subset_var <- "all"
+subset_var <- "all"  # run with this one ***
 #subset_var <- "Ecoregion_L1_code"
 #subset_var <- "Ecoregion_L2_code"
 #subset_var <- "Ecoregion_L2_elev_lat"
 #subset_var <- "Ecoregion_L2_elev"
-#subset_var <- "Ecoregion_L2_highelev_lat" # use this one ***
+#subset_var <- "Ecoregion_L2_highelev_lat" # then run with this one ***
 
 # subset each region for running summary stats
 lake_data_lo <- lake_data[which(lake_data$Ecoregion_L2_highelev_lat == "lowElev"),]
@@ -120,16 +119,43 @@ var_key <- read.csv("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/variable_k
 pred_vars <- var_key$Variable[which(var_key$Label %in% vars_top)]
 '
 
-# correlation plot
+# correlation matrix
 
 data_cor_all <- lake_data # lake_data, lake_data_lo, lake_data_hi
+
+data_cor_preds <- data_cor_all[, which(colnames(data_cor_all) %in% pred_vars)]
+cor_preds <- cor(data_cor_preds, use = "pairwise.complete.obs")
+
+n_corrs <- ((ncol(cor_preds) ^ 2) - ncol(cor_preds)) / 2 # total num correlations
+
+(sum(cor_preds > 0.7) - ncol(cor_preds)) / 2 # how many correlations exceed 0.7? 86
+((sum(cor_preds > 0.7) - ncol(cor_preds)) / 2) / n_corrs # portion
+
+sum(cor_preds < 0.7 & cor_preds > 0.3) / 2 # how many correlations in 0.3 - 0.7?
+(sum(cor_preds < 0.7 & cor_preds > 0.3) / 2) / n_corrs # portion
+
+(sum(cor_preds < 0.3)) / 2 # how many correlations are below 0.3? 3397
+((sum(cor_preds < 0.3)) / 2) / n_corrs # portion
+
+# top 8
+preds8 <- pred_vars[c(87, 32, 46, 42, 21, 20, 19, 25)]
+data_cor_preds8 <- data_cor_all[, which(colnames(data_cor_all) %in% preds8)]
+cor_preds8 <- cor(data_cor_preds8, use = "pairwise.complete.obs")
+corrplot(cor_preds8)
+#cor_preds <- cor_preds8 # for use above
+#write.csv(cor_preds8, "O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/correlations_top8.csv")
+
+
+
+# including response
 data_cor <- cbind(data_cor_all[, which(colnames(data_cor_all) %in% c("CI_sp90th_tmedian")),], 
                   data_cor_all[, which(colnames(data_cor_all) %in% pred_vars)])
 cor_vars <- cor(data_cor, use = "pairwise.complete.obs")
 
-sum(cor_vars > 0.7) - ncol(data_cor) # how many correlations exceed 7?
+#write.csv(cor_vars, "O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/correlations.csv")
 
-write.csv(cor_vars, "O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/correlations.csv")
+
+
 
 library(corrplot)
 corrplot(cor_vars)
@@ -204,8 +230,8 @@ for (d in 1:length(data_subsets)) {
       print(sprintf("   *** %s: run #%s of %s ***   ", dataset_name, j, nruns))
       
       # run rf function
-      rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit, mtry = floor(sqrt(ncol(pred_data)))) # randomForest
-      #rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit) # randomForest
+      #rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit, mtry = floor(sqrt(ncol(pred_data)))) # randomForest
+      rf_i <- randomForest(x = pred_data, y = resp_data, na.action = na.omit) # randomForest
       
       # append this RF to list of RFs in this subset, and MSE to treeMSE_df
       rf_list_subset[[j]] <- rf_i

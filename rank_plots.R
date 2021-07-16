@@ -1,12 +1,12 @@
 library(ggplot2)
 
-setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/RF/out/current")
-setwd("/Users/wilsonsalls/Desktop/EPA/GLB/RF/out/current")
+setwd("xxx/xxx/xxx/.../out") #                                 <<<< USER INPUT  **************
+setwd("O:/PRIV/NERL_ORD_CYAN/Salls_working/GLB/Analysis/Publication/out")
 
 # ***** select one *****
-ranks_all <- read.csv("var_rank_all_CI_sp90th_tmedian_2018-12-19.csv", stringsAsFactors = FALSE) 
-ranks_high <- read.csv("var_rank_hiElevHiLat_CI_sp90th_tmedian_2018-11-14.csv", stringsAsFactors = FALSE)
-ranks_low <- read.csv("var_rank_lowElev_CI_sp90th_tmedian_2018-11-14.csv", stringsAsFactors = FALSE)
+ranks_all <- read.csv("var_rank_CI_sp90th_tmedian_all_2021-03-26.csv", stringsAsFactors = FALSE) 
+ranks_high <- read.csv("var_rank_CI_sp90th_tmedian_hiElevHiLat_2021-03-26.csv", stringsAsFactors = FALSE)
+ranks_low <- read.csv("var_rank_CI_sp90th_tmedian_lowElev_2021-03-26.csv", stringsAsFactors = FALSE)
 
 subset <- "all" # all, high, low
 
@@ -22,9 +22,9 @@ if (subset == "all") {
 }
 
 # number of variables to show (decided to show top 25 for paper)
-nvar <- length(unique(ranks_all$var)) # 88 variables total
-#nvar <- 25 # <<<< subset here <<<<
-ranks <- ranks[ranks$cum_rank <= nvar, ]
+#nvar <- length(unique(ranks_all$var)) # 88 variables total
+nvar <- 25 # <<<< subset here <<<<
+ranks <- ranks[ranks$cuml_rank <= nvar, ]
 
 # convert wide rank table to long
 ranks <- ranks[, 2:(which(colnames(ranks) == "rank_sum") - 1)]
@@ -55,8 +55,8 @@ ggplot(ranks_long, aes(factor(var, levels = ranks$var), rank), base_family = "TT
   scale_y_continuous(breaks = seq(0, max(ranks_long$rank), by = 5),  
                      trans = 'reverse') + 
   ggtitle(title) +
-  geom_vline(xintercept = seq(1.5, (nvar + 0.5), 1), linetype = "dotted", color = "black", size) + # adds vertical lines
-  geom_hline(yintercept = seq(0, (floor(max(ranks_long$rank) / 5) * 5), 5), linetype = "dotted", color = "black", size) + # adds horizontal lines
+  geom_vline(xintercept = seq(1.5, (nvar + 0.5), 1), linetype = "dotted", color = "black") + # adds vertical lines
+  geom_hline(yintercept = seq(0, (floor(max(ranks_long$rank) / 5) * 5), 5), linetype = "dotted", color = "black") + # adds horizontal lines
   geom_boxplot() +
   stat_summary(fun.y="mean", geom="point", color = "red")
 
